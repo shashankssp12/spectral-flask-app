@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Spectral - Modern File Sharing{% endblock %}
+
+{% block content %}
+<div style="padding: 2rem 0;">
+    <div style="display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto;">
+        <h1 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem;">
+            Store, share, and find your files with ease
+        </h1>
+        <p style="color: #666; font-size: 1.2rem; margin-bottom: 2rem;">
+            Spectral helps you organize your files and discover similar images with AI-powered search.
+        </p>
+        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+            <a href="{{ url_for('signup') }}" class="btn btn-primary">Get Started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-secondary">Login to Your Account</a>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div style="background-color: #f9f9f9; padding: 2rem 0; margin-top: 2rem;">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <h2 style="text-align: center; margin-bottom: 2rem; font-size: 1.5rem;">Key Features</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <!-- Feature 1 -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Easy File Upload</h3>
+                    <p style="color: #666;">
+                        Upload any type of file with a simple drag and drop interface.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Image Search</h3>
+                    <p style="color: #666;">
+                        Find similar images in your collection using our advanced AI technology.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Flexible Sharing</h3>
+                    <p style="color: #666;">
+                        Control who can access your files with public and private sharing options.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
