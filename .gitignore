@@ -1,0 +1,42 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+
+# Flask instance folder
+instance/
+
+# Uploaded user files
+uploads/*
+!uploads/.gitkeep
+
+# Environment variables
+.env
+.flaskenv
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
