@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Image Search - Spectral{% endblock %}
+
+{% block content %}
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem;">←</a>
+    <h1 style="font-size: 1.8rem; font-weight: bold;">Image Search</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">Find Similar Images</h2>
+            <p style="color: #666;">
+                Upload an image to find similar images in your collection
+            </p>
+        </div>
+        
+        <!-- Image Upload Area -->
+        <div style="max-width: 500px; margin: 0 auto;">
+            <form id="image-search-form" method="get" action="{{ url_for('api_similar_images') }}">
+                <div id="image-search-upload-area" class="upload-area">
+                    <div style="font-size: 2rem; color: #aaa; margin-bottom: 1rem;">🔍</div>
+                    <p style="margin-bottom: 0.5rem;">
+                        Drag an image here or click to browse
+                    </p>
+                    <p style="color: #666; font-size: 0.8rem;">
+                        Upload an image to find similar images in your collection
+                    </p>
+                    <input id="image-search-input" type="file" accept="image/*" style="display: none;">
+                    <input type="hidden" id="image-url" name="image_url" value="">
+                </div>
+            
+                <!-- Preview Area (hidden by default) -->
+                <div id="image-preview-container" style="margin-top: 1rem; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; display: none;">
+                    <div style="position: relative;">
+                        <img id="preview-image" src="#" alt="Search reference" style="width: 100%; display: block;">
+                        <button id="remove-image" type="button" style="position: absolute; right: 0.5rem; top: 0.5rem; background-color: #e53e3e; color: white; border: none; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer;">×</button>
+                    </div>
+                    <div style="padding: 1rem; display: flex; justify-content: flex-end;">
+                        <button type="submit" id="search-button" class="btn btn-primary">Find Similar Images</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Search Results (hidden by default) -->
+        <div id="search-results" style="margin-top: 2rem; display: {% if similar_images %}block{% else %}none{% endif %};">
+            <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">Search Results</h3>
+            
+            <!-- Results Grid -->
+            <div class="grid">
+                {% if similar_images %}
+                    {% for image_url, similarity in similar_images %}
+                        <div class="file-card">
+                            <div class="file-thumbnail">
+                                <img src="{{ image_url }}" alt="Similar image">
+                            </div>
+                            <div class="file-info">
+                                <h3 style="font-weight: 500; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ image_url.split('/')[-1] }}
+                                </h3>
+                                <p style="color: #666; font-size: 0.8rem; margin: 0.25rem 0;">
+                                    {{ similarity }}% Match
+                                </p>
+                            </div>
+                            <div class="file-actions">
+                                <a href="{{ image_url }}" download class="btn btn-secondary" style="padding: 0.25rem 0.5rem;">
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem 0;">
+                        <p style="color: #666;">No similar images found. Try with a different image.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Image search functionality
+    const imageSearchArea = document.getElementById('image-search-upload-area');
+    const imageSearchInput = document.getElementById('image-search-input');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const removeImageButton = document.getElementById('remove-image');
+    const searchResults = document.getElementById('search-results');
+    const imageUrlInput = document.getElementById('image-url');
+    const searchForm = document.getElementById('image-search-form');
+    
+    // Handle click on upload area
+    imageSearchArea.addEventListener('click', function() {
+        imageSearchInput.click();
+    });
+    
+    // Handle file selection
+    imageSearchInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                imageSearchArea.style.display = 'none';
+                imagePreviewContainer.style.display = 'block';
+                
+                // Upload the file to get a URL for it
+                uploadImage(file);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Function to upload image and get a URL for it
+    async function uploadImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('share_type', 'private');
+        formData.append('shared_to', JSON.stringify([]));
+        
+        try {
+            const response = await fetch('/api/shared-files', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                imageUrlInput.value = data.file;
+            } else {
+                alert('Failed to upload image. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    }
+    
+    // Remove image
+    removeImageButton.addEventListener('click', function() {
+        imagePreviewContainer.style.display = 'none';
+        imageSearchArea.style.display = 'block';
+        searchResults.style.display = 'none';
+        imageSearchInput.value = '';
+        imageUrlInput.value = '';
+    });
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        imageSearchArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        imageSearchArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        imageSearchArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    // Handle dropped files
+    imageSearchArea.addEventListener('drop', handleDrop, false);
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight() {
+        imageSearchArea.style.borderColor = '#6b46c1';
+        imageSearchArea.style.backgroundColor = '#f5f0ff';
+    }
+    
+    function unhighlight() {
+        imageSearchArea.style.borderColor = '#ddd';
+        imageSearchArea.style.backgroundColor = '';
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files && files[0]) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                imageSearchInput.files = files;
+                const event = new Event('change', { bubbles: true });
+                imageSearchInput.dispatchEvent(event);
+            }
+        }
+    }
+    
+    // Handle form submission
+    searchForm.addEventListener('submit', function(e) {
+        if (!imageUrlInput.value) {
+            e.preventDefault();
+            alert('Please upload an image first.');
+            return;
+        }
+        
+        // Add a loading indicator
+        searchResults.innerHTML = `
+            <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">Search Results</h3>
+            <div style="text-align: center; padding: 2rem 0;">
+                <p>Searching for similar images...</p>
+            </div>
+        `;
+        searchResults.style.display = 'block';
+    });
+</script>
+{% endblock %}
