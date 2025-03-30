@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Spectral{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.8rem; font-weight: bold;">My Files</h1>
+    <div style="display: flex; gap: 0.5rem;">
+        <button id="upload-button" class="btn btn-primary">Upload</button>
+        <a href="{{ url_for('image_search') }}" class="btn btn-secondary">Image Search</a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div style="display: flex; margin-bottom: 1rem; border-bottom: 1px solid #ddd;">
+    <a href="{{ url_for('dashboard') }}" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 2px solid {% if request.args.get('type') != 'images' and request.args.get('type') != 'videos' and request.args.get('type') != 'documents' %}#6b46c1{% else %}transparent{% endif %}; color: {% if request.args.get('type') != 'images' and request.args.get('type') != 'videos' and request.args.get('type') != 'documents' %}#6b46c1{% else %}#333{% endif %};">All</a>
+    <a href="{{ url_for('dashboard', type='images') }}" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 2px solid {% if request.args.get('type') == 'images' %}#6b46c1{% else %}transparent{% endif %}; color: {% if request.args.get('type') == 'images' %}#6b46c1{% else %}#333{% endif %};">Images</a>
+    <a href="{{ url_for('dashboard', type='videos') }}" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 2px solid {% if request.args.get('type') == 'videos' %}#6b46c1{% else %}transparent{% endif %}; color: {% if request.args.get('type') == 'videos' %}#6b46c1{% else %}#333{% endif %};">Videos</a>
+    <a href="{{ url_for('dashboard', type='documents') }}" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 2px solid {% if request.args.get('type') == 'documents' %}#6b46c1{% else %}transparent{% endif %}; color: {% if request.args.get('type') == 'documents' %}#6b46c1{% else %}#333{% endif %};">Documents</a>
+</div>
+
+<!-- Files Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+    {% if shared_files %}
+        {% for file in shared_files %}
+            <div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden; position: relative;">
+                <div style="height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                    {% if file.file_type|lower in ['png', 'jpg', 'jpeg', 'webp', 'gif'] %}
+                        <img src="{{ file.file }}" alt="{{ file.file_name }}" style="max-width: 100%; max-height: 100%; object-fit: cover;">
+                    {% else %}
+                        <div style="font-size: 2rem; color: #aaa;">📄</div>
+                    {% endif %}
+                </div>
+                <div style="padding: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="overflow: hidden;">
+                            <h3 style="font-weight: 500; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ file.file_name }}</h3>
+                            <p style="color: #666; font-size: 0.8rem; margin: 0.25rem 0;">{{ file.file_size }}</p>
+                        </div>
+                        <div style="position: relative;">
+                            <button onclick="toggleFileMenu({{ file.id }})" style="padding: 0.25rem 0.5rem; background: none; border: none; cursor: pointer;">⋮</button>
+                            <div id="file-menu-{{ file.id }}" style="position: absolute; right: 0; bottom: 100%; background-color: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none; z-index: 10; min-width: 150px;">
+                                <a href="{{ file.file }}" target="_blank" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">View</a>
+                                <a href="{{ file.file }}" download style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">Download</a>
+                                <a href="#" onclick="togglePrivacy({{ file.id }}, '{{ file.share_type }}')" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">
+                                    {% if file.share_type == 'public' %}Make Private{% else %}Make Public{% endif %}
+                                </a>
+                                <a href="#" onclick="deleteFile({{ file.id }})" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #e53e3e;">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if file.file_description %}
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
+                            <p>{{ file.file_description[:100] }}{% if file.file_description|length > 100 %}...{% endif %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div style="padding: 0.75rem; border-top: 1px solid #ddd; display: flex; justify-content: space-between;">
+                    <span style="font-size: 0.8rem; color: #666;">
+                        {{ file.share_time.strftime('%Y-%m-%d') }}
+                    </span>
+                    <span style="color: {% if file.share_type == 'public' %}#6b46c1{% else %}#666{% endif %};">
+                        {% if file.share_type == 'public' %}🌐{% else %}🔒{% endif %}
+                    </span>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 0;">
+            <div style="font-size: 2rem; color: #aaa; margin-bottom: 1rem;">📁</div>
+            <h2 style="font-size: 1.2rem; margin-bottom: 0.5rem;">No files yet</h2>
+            <p style="color: #666; margin-bottom: 1rem;">Upload your first file to get started</p>
+            <button id="empty-upload-button" style="background-color: #6b46c1; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Upload Files</button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Upload Modal -->
+<div id="upload-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none;">
+    <div style="background-color: white; border-radius: 4px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+        <div style="padding: 1rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">Upload Files</h2>
+            <span id="close-upload-modal" style="cursor: pointer; font-size: 1.5rem;">&times;</span>
+        </div>
+        <div style="padding: 1rem;">
+            <form id="upload-form" method="post" enctype="multipart/form-data">
+                <div id="drop-area" style="border: 2px dashed #ddd; border-radius: 4px; padding: 2rem; text-align: center; cursor: pointer;">
+                    <div style="font-size: 2rem; color: #aaa; margin-bottom: 1rem;">📤</div>
+                    <p style="margin-bottom: 0.5rem;">
+                        Drag files here or click to browse
+                    </p>
+                    <p style="color: #666; font-size: 0.8rem;">
+                        Supports images, videos, documents, and more
+                    </p>
+                    <input id="file-upload" type="file" style="display: none;">
+                </div>
+                
+                <div id="selected-files" style="margin-top: 1rem; display: none;">
+                    <h4 style="margin-bottom: 0.5rem;">Selected Files</h4>
+                    <div style="border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                        <!-- Selected files will be added here dynamically -->
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label>
+                        <input type="radio" name="share_type" value="private" checked> Private
+                    </label>
+                    <label style="margin-left: 1rem;">
+                        <input type="radio" name="share_type" value="public"> Public
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div style="padding: 1rem; border-top: 1px solid #ddd; display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="cancel-upload" style="padding: 0.5rem 1rem; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+            <button id="confirm-upload" style="padding: 0.5rem 1rem; background-color: #6b46c1; color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>Upload</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Function to toggle file menus
+    function toggleFileMenu(id) {
+        const menu = document.getElementById(`file-menu-${id}`);
+        if (menu) {
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Close other menus
+        document.querySelectorAll('[id^="file-menu-"]').forEach(m => {
+            if (m.id !== `file-menu-${id}`) {
+                m.style.display = 'none';
+            }
+        });
+    }
+    
+    // Close menus when clicking elsewhere
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('button')) {
+            document.querySelectorAll('[id^="file-menu-"]').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
+    
+    // Upload modal functionality
+    const uploadButton = document.getElementById('upload-button');
+    const emptyUploadButton = document.getElementById('empty-upload-button');
+    const uploadModal = document.getElementById('upload-modal');
+    const closeUploadModal = document.getElementById('close-upload-modal');
+    const cancelUpload = document.getElementById('cancel-upload');
+    const dropArea = document.getElementById('drop-area');
+    const fileUpload = document.getElementById('file-upload');
+    const selectedFiles = document.getElementById('selected-files');
+    const confirmUpload = document.getElementById('confirm-upload');
+    
+    if (uploadButton) {
+        uploadButton.addEventListener('click', function() {
+            uploadModal.style.display = 'flex';
+        });
+    }
+    
+    if (emptyUploadButton) {
+        emptyUploadButton.addEventListener('click', function() {
+            uploadModal.style.display = 'flex';
+        });
+    }
+    
+    closeUploadModal.addEventListener('click', function() {
+        uploadModal.style.display = 'none';
+    });
+    
+    cancelUpload.addEventListener('click', function() {
+        uploadModal.style.display = 'none';
+    });
+    
+    dropArea.addEventListener('click', function() {
+        fileUpload.click();
+    });
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    // Handle dropped files
+    dropArea.addEventListener('drop', handleDrop, false);
+    fileUpload.addEventListener('change', handleFiles, false);
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight() {
+        dropArea.style.borderColor = '#6b46c1';
+        dropArea.style.backgroundColor = '#f5f0ff';
+    }
+    
+    function unhighlight() {
+        dropArea.style.borderColor = '#ddd';
+        dropArea.style.backgroundColor = '';
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles({ files: files });
+    }
+    
+    function handleFiles(e) {
+        let files = e.files || e.target.files;
+        if (files.length > 0) {
+            selectedFiles.style.display = 'block';
+            confirmUpload.disabled = false;
+            
+            const fileList = selectedFiles.querySelector('div');
+            fileList.innerHTML = '';
+            
+            Array.from(files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.style.padding = '0.5rem';
+                fileItem.style.borderBottom = '1px solid #ddd';
+                fileItem.style.display = 'flex';
+                fileItem.style.justifyContent = 'space-between';
+                fileItem.style.alignItems = 'center';
+                
+                const fileName = document.createElement('span');
+                fileName.textContent = file.name;
+                
+                fileItem.appendChild(fileName);
+                fileList.appendChild(fileItem);
+            });
+
+            // Store the file for upload
+            window.fileToUpload = files[0];
+        }
+    }
+    
+    // Handle upload form submission
+    confirmUpload.addEventListener('click', async function() {
+        if (!window.fileToUpload) {
+            alert('Please select a file to upload');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', window.fileToUpload);
+        formData.append('share_type', document.querySelector('input[name="share_type"]:checked').value);
+        formData.append('shared_to', JSON.stringify([]));
+        
+        try {
+            const response = await fetch('/api/shared-files', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const errorData = await response.json();
+                alert('Upload failed: ' + (errorData.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while uploading the file');
+        }
+    });
+    
+    // Toggle privacy
+    function togglePrivacy(fileId, currentShareType) {
+        const newShareType = currentShareType === 'public' ? 'private' : 'public';
+        
+        fetch(`/api/shared-files/${fileId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ share_type: newShareType })
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to update privacy settings');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+    
+    // Delete file
+    function deleteFile(fileId) {
+        if (confirm('Are you sure you want to delete this file?')) {
+            fetch(`/api/shared-files/${fileId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete file');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+    }
+</script>
+{% endblock %}
