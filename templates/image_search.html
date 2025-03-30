@@ -46,9 +46,11 @@
         </div>
         
         <!-- Search Results (hidden by default) -->
-        <div id="search-results" style="margin-top: 2rem; display: {% if similar_images %}block{% else %}none{% endif %};">
+        <!-- Search Results (hidden by default) -->
+            <div id="search-results" style="margin-top: 2rem; display: none;" 
+            {% if similar_images %}class="results-visible"{% endif %}>
             <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">Search Results</h3>
-            
+
             <!-- Results Grid -->
             <div class="grid">
                 {% if similar_images %}
