@@ -12,7 +12,7 @@ import base64
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt'}
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt', 'mp4', 'mov', 'avi', 'mkv', 'webm'}
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
 
 # Create upload folder if it doesn't exist
@@ -174,6 +174,25 @@ def api_similar_images():
     similar_images = [(f['file'], 90 - i * 5) for i, f in enumerate(image_files[:5])]
     
     return jsonify(similar_images)
+
+@app.route('/api/generate-description/<int:file_id>', methods=['POST'])
+def api_generate_description(file_id):
+    file = files.get(file_id)
+    
+    if not file:
+        return jsonify({"error": "File not found"}), 404
+    
+    # Check if it's an image
+    if file['file_type'].lower() not in ['png', 'jpg', 'jpeg', 'webp', 'gif']:
+        return jsonify({"error": "Description generation only available for images"}), 400
+    
+    # Generate a simple description (you could integrate with an AI service here)
+    description = f"This appears to be a {file['file_type']} image named {file['file_name']}. It shows what looks like visual content that might be useful for your project or collection. The image was uploaded on {file['share_time'].strftime('%Y-%m-%d')}."
+    
+    # Update file
+    file['file_description'] = description
+    
+    return jsonify({"file_description": description})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -20,7 +20,7 @@
         <!-- Image Upload Area -->
         <div style="max-width: 500px; margin: 0 auto;">
             <form id="image-search-form" method="get" action="{{ url_for('api_similar_images') }}">
-                <div id="image-search-upload-area" class="upload-area">
+                <div id="image-search-upload-area" class="upload-area" style="{% if query_image %}display:none;{% endif %}">
                     <div style="font-size: 2rem; color: #aaa; margin-bottom: 1rem;">🔍</div>
                     <p style="margin-bottom: 0.5rem;">
                         Drag an image here or click to browse
@@ -29,13 +29,13 @@
                         Upload an image to find similar images in your collection
                     </p>
                     <input id="image-search-input" type="file" accept="image/*" style="display: none;">
-                    <input type="hidden" id="image-url" name="image_url" value="">
+                    <input type="hidden" id="image-url" name="image_url" value="{{ query_image }}">
                 </div>
             
-                <!-- Preview Area (hidden by default) -->
-                <div id="image-preview-container" style="margin-top: 1rem; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; display: none;">
+                <!-- Preview Area (shown when an image is uploaded) -->
+                <div id="image-preview-container" style="margin-top: 1rem; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; {% if not query_image %}display:none;{% endif %}">
                     <div style="position: relative;">
-                        <img id="preview-image" src="#" alt="Search reference" style="width: 100%; display: block;">
+                        <img id="preview-image" src="{{ query_image }}" alt="Search reference" style="width: 100%; display: block;">
                         <button id="remove-image" type="button" style="position: absolute; right: 0.5rem; top: 0.5rem; background-color: #e53e3e; color: white; border: none; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer;">×</button>
                     </div>
                     <div style="padding: 1rem; display: flex; justify-content: flex-end;">
@@ -46,20 +46,18 @@
         </div>
         
         <!-- Search Results (hidden by default) -->
-        <!-- Search Results (hidden by default) -->
-            <div id="search-results" style="margin-top: 2rem; display: none;" 
-            {% if similar_images %}class="results-visible"{% endif %}>
+        <div id="search-results" style="margin-top: 2rem; {% if not similar_images %}display:none;{% endif %}">
             <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">Search Results</h3>
-
+            
             <!-- Results Grid -->
-            <div class="grid">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
                 {% if similar_images %}
                     {% for image_url, similarity in similar_images %}
-                        <div class="file-card">
-                            <div class="file-thumbnail">
-                                <img src="{{ image_url }}" alt="Similar image">
+                        <div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden; position: relative;">
+                            <div style="height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                <img src="{{ image_url }}" alt="Similar image" style="max-width: 100%; max-height: 100%; object-fit: cover;">
                             </div>
-                            <div class="file-info">
+                            <div style="padding: 0.75rem;">
                                 <h3 style="font-weight: 500; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     {{ image_url.split('/')[-1] }}
                                 </h3>
@@ -67,10 +65,9 @@
                                     {{ similarity }}% Match
                                 </p>
                             </div>
-                            <div class="file-actions">
-                                <a href="{{ image_url }}" download class="btn btn-secondary" style="padding: 0.25rem 0.5rem;">
-                                    Download
-                                </a>
+                            <div style="padding: 0.75rem; border-top: 1px solid #ddd; display: flex; justify-content: space-between;">
+                                <a href="#" onclick="copyLink('{{ image_url }}')" style="color: #6b46c1; text-decoration: none; font-size: 0.8rem;">Copy Link</a>
+                                <a href="{{ image_url }}" download style="color: #6b46c1; text-decoration: none; font-size: 0.8rem;">Download</a>
                             </div>
                         </div>
                     {% endfor %}
@@ -155,6 +152,15 @@
         imageUrlInput.value = '';
     });
     
+    // Copy link function
+    function copyLink(url) {
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Link copied to clipboard!');
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
+    
     // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         imageSearchArea.addEventListener(eventName, preventDefaults, false);
@@ -210,14 +216,14 @@
             return;
         }
         
-        // Add a loading indicator
+        // Show loading indicator
+        searchResults.style.display = 'block';
         searchResults.innerHTML = `
             <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">Search Results</h3>
             <div style="text-align: center; padding: 2rem 0;">
                 <p>Searching for similar images...</p>
             </div>
         `;
-        searchResults.style.display = 'block';
     });
 </script>
 {% endblock %}

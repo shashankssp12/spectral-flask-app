@@ -27,6 +27,8 @@
                 <div style="height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
                     {% if file.file_type|lower in ['png', 'jpg', 'jpeg', 'webp', 'gif'] %}
                         <img src="{{ file.file }}" alt="{{ file.file_name }}" style="max-width: 100%; max-height: 100%; object-fit: cover;">
+                    {% elif file.file_type|lower in ['mp4', 'mov', 'avi', 'webm', 'mkv'] %}
+                        <div style="font-size: 2rem; color: #aaa;">🎬</div>
                     {% else %}
                         <div style="font-size: 2rem; color: #aaa;">📄</div>
                     {% endif %}
@@ -42,9 +44,13 @@
                             <div id="file-menu-{{ file.id }}" style="position: absolute; right: 0; bottom: 100%; background-color: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none; z-index: 10; min-width: 150px;">
                                 <a href="{{ file.file }}" target="_blank" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">View</a>
                                 <a href="{{ file.file }}" download style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">Download</a>
+                                <a href="#" onclick="copyLink('{{ file.file }}')" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">Copy Link</a>
                                 <a href="#" onclick="togglePrivacy({{ file.id }}, '{{ file.share_type }}')" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">
                                     {% if file.share_type == 'public' %}Make Private{% else %}Make Public{% endif %}
                                 </a>
+                                {% if file.file_type|lower in ['png', 'jpg', 'jpeg', 'webp', 'gif'] and not file.file_description %}
+                                <a href="#" onclick="generateAIDescription({{ file.id }})" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #333;">Generate AI Description</a>
+                                {% endif %}
                                 <a href="#" onclick="deleteFile({{ file.id }})" style="display: block; padding: 0.5rem 1rem; text-decoration: none; color: #e53e3e;">Delete</a>
                             </div>
                         </div>
@@ -54,6 +60,10 @@
                         <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
                             <p>{{ file.file_description[:100] }}{% if file.file_description|length > 100 %}...{% endif %}</p>
                         </div>
+                    {% elif file.file_type|lower in ['png', 'jpg', 'jpeg', 'webp', 'gif'] %}
+                        <button onclick="generateAIDescription({{ file.id }})" style="width: 100%; margin-top: 0.5rem; padding: 0.25rem; background-color: white; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                            Generate AI Description
+                        </button>
                     {% endif %}
                 </div>
                 <div style="padding: 0.75rem; border-top: 1px solid #ddd; display: flex; justify-content: space-between;">
@@ -146,6 +156,36 @@
             });
         }
     });
+    
+    // Copy link function
+    function copyLink(url) {
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Link copied to clipboard!');
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
+
+    // Generate AI description
+    function generateAIDescription(fileId) {
+        fetch(`/api/generate-description/${fileId}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Failed to generate description');
+        })
+        .then(data => {
+            alert('Description generated! Refreshing page...');
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while generating the description');
+        });
+    }
     
     // Upload modal functionality
     const uploadButton = document.getElementById('upload-button');
